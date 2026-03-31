@@ -26,12 +26,7 @@ def clear_index():
 
 
 def _load_ignore_patterns():
-    """
-    Read .mygitignore from the working directory.
-    Returns a list of glob patterns to exclude.
-    Always ignores .mygit/ itself and __pycache__.
-    """
-    patterns = [".mygit", ".mygit/*", "__pycache__", "*.pyc"]
+    patterns = [".mygit", ".mygit/*", "__pycache__", "*.pyc", ".git", ".git/*"]
     ignore_file = ".mygitignore"
     if os.path.exists(ignore_file):
         with open(ignore_file, "r") as f:
@@ -41,11 +36,13 @@ def _load_ignore_patterns():
                     patterns.append(line)
     return patterns
 
-
 def _is_ignored(filepath, patterns):
     """Return True if filepath matches any ignore pattern."""
+    filepath_norm = filepath.replace("\\", "/")
     for pattern in patterns:
-        if fnmatch.fnmatch(filepath, pattern):
+        if fnmatch.fnmatch(filepath_norm, pattern):
+            return True
+        if fnmatch.fnmatch(filepath_norm, f"{pattern}/*"):
             return True
         if fnmatch.fnmatch(os.path.basename(filepath), pattern):
             return True

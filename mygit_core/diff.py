@@ -1,5 +1,3 @@
-# mygit_core/diff.py
-
 import os
 import difflib
 import json
@@ -7,12 +5,28 @@ from mygit_core.repository import get_mygit_path, is_initialized, get_head_commi
 from mygit_core.hash_object import hash_file
 
 
+def _read_text_smart(filepath):
+    """Read a file trying UTF-8 first, then UTF-16, then latin-1 as fallback."""
+    for enc in ("utf-8-sig", "utf-16", "latin-1"):
+        try:
+            with open(filepath, "r", encoding=enc) as f:
+                return f.readlines()
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+    return []
+
+
 def get_file_lines_from_blob(file_hash):
-    """Read a stored object blob and return its lines as a list."""
+    """Read a stored object blob and return its lines."""
     object_path = get_mygit_path("objects", file_hash)
     with open(object_path, "rb") as f:
-        content = f.read()
-    return content.decode("utf-8", errors="replace").splitlines(keepends=True)
+        raw = f.read()
+    for enc in ("utf-8-sig", "utf-16", "latin-1"):
+        try:
+            return raw.decode(enc).splitlines(keepends=True)
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+    return []
 
 
 def diff_file(filepath):
@@ -48,10 +62,8 @@ def diff_file(filepath):
         print(f"No changes in '{filepath}'")
         return
 
-    # Get lines from committed blob vs current file
     old_lines = get_file_lines_from_blob(committed_hash)
-    with open(filepath, "r", errors="replace") as f:
-        new_lines = f.readlines()
+    new_lines = _read_text_smart(filepath)
 
     diff = difflib.unified_diff(
         old_lines,
@@ -61,16 +73,15 @@ def diff_file(filepath):
         lineterm=""
     )
 
-    # Colorise output: red for removed, green for added
     for line in diff:
         if line.startswith("+++") or line.startswith("---"):
             print(line)
         elif line.startswith("+"):
-            print(f"\033[32m{line}\033[0m")   # green
+            print(f"\033[32m{line}\033[0m")
         elif line.startswith("-"):
-            print(f"\033[31m{line}\033[0m")   # red
+            print(f"\033[31m{line}\033[0m")
         elif line.startswith("@@"):
-            print(f"\033[36m{line}\033[0m")   # cyan
+            print(f"\033[36m{line}\033[0m")
         else:
             print(line)
 
