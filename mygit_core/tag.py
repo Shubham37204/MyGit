@@ -1,5 +1,4 @@
-# mygit_core/tag.py
-
+import glob
 import os
 from mygit_core.repository import (
     get_mygit_path, is_initialized, get_head_commit
@@ -27,12 +26,13 @@ def create_tag(tag_name, commit_hash=None):
         print("Cannot create tag — no commits yet.")
         return
 
-    # Validate the commit exists if a hash was provided manually
     if commit_hash:
-        commit_path = get_mygit_path("commits", f"{commit_hash}.json")
-        if not os.path.exists(commit_path):
+        commits_dir = get_mygit_path("commits")
+        matches = glob.glob(os.path.join(commits_dir, f"{commit_hash}*.json"))
+        if not matches:
             print(f"Commit '{commit_hash}' not found.")
             return
+        target = os.path.basename(matches[0]).replace(".json", "")
 
     with open(tag_file, "w") as f:
         f.write(target)
