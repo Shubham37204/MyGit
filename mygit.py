@@ -1,5 +1,3 @@
-# mygit.py
-
 import argparse
 import sys
 from mygit_core.log import show_log
@@ -9,6 +7,7 @@ from mygit_core.commit import create_commit
 from mygit_core.status import show_status
 from mygit_core.checkout import checkout_commit
 from mygit_core.branch import create_branch, list_branches, switch_branch
+from mygit_core.tag import create_tag, list_tags, delete_tag
 
 def main():
     parser = argparse.ArgumentParser(
@@ -21,7 +20,6 @@ def main():
         metavar="command"
     )
 
-    # init — no extra arguments
     subparsers.add_parser(
         "init",
         help="Initialize a new mygit repository"
@@ -39,6 +37,12 @@ def main():
     # switch — change current branch
     switch_parser = subparsers.add_parser("switch", help="Switch to a branch")
     switch_parser.add_argument("name", help="Branch name to switch to")
+
+    # tag — create, list, or delete tags
+    tag_parser = subparsers.add_parser("tag", help="Create or list tags")
+    tag_parser.add_argument("name", nargs="?", help="Tag name (omit to list all tags)")
+    tag_parser.add_argument("commit", nargs="?", help="Commit hash to tag (default: HEAD)")
+    tag_parser.add_argument("-d", dest="delete", help="Delete a tag by name")
 
     # add — requires a filename
     add_parser = subparsers.add_parser(
@@ -92,6 +96,14 @@ def main():
 
     elif args.command == "switch":
         switch_branch(args.name)
+        
+    elif args.command == "tag":
+        if args.delete:
+            delete_tag(args.delete)
+        elif args.name:
+            create_tag(args.name, args.commit)
+        else:
+            list_tags()
 
     else:
         print(f"Unknown command: {args.command}")
